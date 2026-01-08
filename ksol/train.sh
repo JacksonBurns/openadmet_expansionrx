@@ -1,0 +1,20 @@
+chemprop train \
+	--from-foundation output_pretrain/model_0/best.pt \
+	--ffn-num-layers 1 \
+	--ffn-hidden-dim 2048 \
+	--batch-size 64 \
+	--epochs 50 \
+	--patience 5 \
+	--num-workers 1 \
+	--data-seed 42 \
+	--pytorch-seed 42 \
+	--data-path ../train_KSOL.csv \
+	--smiles-columns SMILES \
+	--target-columns KSOL \
+	--output-dir output_train \
+	--split-type random \
+	--split-sizes 0.90 0.10 0.00 \
+    --num-replicates 10 \
+	--loss mse \
+	--metrics mse mae rmse r2 \
+    --show-individual-scores

@@ -1,0 +1,18 @@
+chemprop train \
+	--from-foundation CheMeleon \
+	--ffn-num-layers 1 \
+	--ffn-hidden-dim 2048 \
+	--batch-size 256 \
+	--epochs 10 \
+	--patience 2 \
+	--num-workers 8 \
+	--data-seed 42 \
+	--pytorch-seed 42 \
+	--data-path malikussaid_et_al_logp_data.csv \
+	--smiles-columns SMILES \
+	--target-columns logP \
+	--output-dir output_pretrain \
+	--split-type random \
+	--split-sizes 0.95 0.05 0.00 \
+	--loss mse \
+	--metrics mae
