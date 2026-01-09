@@ -16,5 +16,4 @@ chemprop train \
 	--split-sizes 0.90 0.10 0.00 \
     --num-replicates 10 \
 	--loss mse \
-	--metrics mse mae rmse r2 \
-    --show-individual-scores
+	--metrics mse mae rmse r2

@@ -1,5 +1,5 @@
 chemprop train \
-	--from-foundation output_pretrain/model_0/best.pt \
+	--from-foundation CheMeleon \
 	--ffn-num-layers 1 \
 	--ffn-hidden-dim 2048 \
 	--batch-size 64 \
@@ -8,12 +8,13 @@ chemprop train \
 	--num-workers 1 \
 	--data-seed 42 \
 	--pytorch-seed 42 \
-	--data-path ../train_LogD.csv \
+	--data-path ../train_HLM_CLint_MLM_CLint_Caco-2_Permeability_Papp_AgtB_Caco-2_Permeability_Efflux.csv \
 	--smiles-columns SMILES \
-	--target-columns LogD \
+	--target-columns "HLM CLint" "MLM CLint" "Caco-2 Permeability Papp A>B" "Caco-2 Permeability Efflux" \
 	--output-dir output_train \
 	--split-type random \
 	--split-sizes 0.90 0.10 0.00 \
     --num-replicates 10 \
 	--loss mse \
-	--metrics mse mae rmse r2
+	--metrics mse mae rmse r2 \
+	--molecule-featurizers morgan_count rdkit_2d
