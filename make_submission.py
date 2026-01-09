@@ -24,23 +24,27 @@ if __name__ == "__main__":
     preds["KSOL"] = df["KSOL"]
 
     df = pd.read_csv("binding_pred.csv")
-    preds["MGMB"] = np.expm1(df["MGMB"])
-    preds["MBPB"] = np.expm1(df["MBPB"])
-    preds["MPPB"] = np.expm1(df["MPPB"])
+    preds["MGMB"] = df["MGMB"]
+    preds["MBPB"] = df["MBPB"]
+    preds["MPPB"] = df["MPPB"]
 
     df = pd.read_csv("clearance_permeability_pred.csv")
-    preds["HLM CLint"] = np.expm1(df["HLM CLint"])
-    preds["MLM CLint"] = np.expm1(df["MLM CLint"])
-    preds["Caco-2 Permeability Papp A>B"] = np.expm1(df["Caco-2 Permeability Papp A>B"])
-    preds["Caco-2 Permeability Efflux"] = np.expm1(df["Caco-2 Permeability Efflux"])
+    preds["HLM CLint"] = df["HLM CLint"]
+    preds["MLM CLint"] = df["MLM CLint"]
+    preds["Caco-2 Permeability Papp A>B"] = df["Caco-2 Permeability Papp A>B"]
+    preds["Caco-2 Permeability Efflux"] = df["Caco-2 Permeability Efflux"]
 
     df = pd.DataFrame(preds)
     
-    # clip predictions to the bounds observed during training
+    # clip predictions to the bounds observed during training (clipped, by me)
     train = pd.read_csv("expansion_data_train_raw.csv")
     train_bounds = train[["LogD","KSOL","HLM CLint","MLM CLint","Caco-2 Permeability Papp A>B","Caco-2 Permeability Efflux","MPPB","MBPB","MGMB"]].agg(["min","max"])
     for col in ["LogD","KSOL","HLM CLint","MLM CLint","Caco-2 Permeability Papp A>B","Caco-2 Permeability Efflux","MPPB","MBPB","MGMB"]:
         df[col] = df[col].clip(lower=train_bounds.loc["min", col], upper=train_bounds.loc["max", col])
+
+    # undo log transforms
+    for col in ["HLM CLint","MLM CLint","Caco-2 Permeability Papp A>B","Caco-2 Permeability Efflux","MPPB","MBPB","MGMB"]:
+        df[col] = np.expm1(df[col])
     
     df.to_csv(
         f"test_predictions_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",

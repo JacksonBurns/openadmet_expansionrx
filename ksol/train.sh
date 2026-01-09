@@ -13,7 +13,7 @@ chemprop train \
 	--target-columns KSOL \
 	--output-dir output_train \
 	--split-type random \
-	--split-sizes 0.90 0.10 0.00 \
-    --num-replicates 10 \
+	--split-sizes 0.80 0.20 0.00 \
+    --num-replicates 5 \
 	--loss mse \
 	--metrics mse mae rmse r2

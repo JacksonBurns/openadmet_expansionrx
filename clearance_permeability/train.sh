@@ -13,8 +13,8 @@ chemprop train \
 	--target-columns "HLM CLint" "MLM CLint" "Caco-2 Permeability Papp A>B" "Caco-2 Permeability Efflux" \
 	--output-dir output_train \
 	--split-type random \
-	--split-sizes 0.90 0.10 0.00 \
-    --num-replicates 10 \
+	--split-sizes 0.80 0.20 0.00 \
+    --num-replicates 5 \
 	--loss mse \
 	--metrics mse mae rmse r2 \
 	--molecule-featurizers morgan_count rdkit_2d
