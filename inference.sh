@@ -17,5 +17,5 @@ chemprop predict \
 
 chemprop predict \
     --output binding_clearance_permeability_pred.csv \
-    --model-paths binding/output_train \
+    --model-paths binding_clearance_permeability/output_train \
     $COMMON_TEST_ARGS
