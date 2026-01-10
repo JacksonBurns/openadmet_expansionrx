@@ -16,4 +16,5 @@ chemprop train \
 	--split-sizes 0.80 0.20 0.00 \
     --num-replicates 5 \
 	--loss mse \
-	--metrics mse mae rmse r2
+	--metrics mse mae rmse r2 \
+	--molecule-featurizers morgan_count rdkit_2d

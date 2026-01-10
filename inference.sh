@@ -1,6 +1,7 @@
 COMMON_TEST_ARGS="
     --test-path expansion_data_test_blinded.csv \
     --smiles-columns SMILES \
+	--molecule-featurizers morgan_count rdkit_2d \
     --batch-size 1024
 "
 
@@ -15,13 +16,6 @@ chemprop predict \
     $COMMON_TEST_ARGS
 
 chemprop predict \
-    --output binding_pred.csv \
+    --output binding_clearance_permeability_pred.csv \
     --model-paths binding/output_train \
-	--molecule-featurizers morgan_count rdkit_2d \
-    $COMMON_TEST_ARGS
-
-chemprop predict \
-    --output clearance_permeability_pred.csv \
-    --model-paths clearance_permeability/output_train \
-    --molecule-featurizers morgan_count rdkit_2d \
     $COMMON_TEST_ARGS

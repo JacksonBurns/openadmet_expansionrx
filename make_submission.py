@@ -23,16 +23,14 @@ if __name__ == "__main__":
     df = pd.read_csv("ksol_pred.csv")
     preds["KSOL"] = df["KSOL"]
 
-    df = pd.read_csv("binding_pred.csv")
-    preds["MGMB"] = df["MGMB"]
-    preds["MBPB"] = df["MBPB"]
-    preds["MPPB"] = df["MPPB"]
-
-    df = pd.read_csv("clearance_permeability_pred.csv")
+    df = pd.read_csv("binding_clearance_permeability_pred.csv")
     preds["HLM CLint"] = df["HLM CLint"]
     preds["MLM CLint"] = df["MLM CLint"]
     preds["Caco-2 Permeability Papp A>B"] = df["Caco-2 Permeability Papp A>B"]
     preds["Caco-2 Permeability Efflux"] = df["Caco-2 Permeability Efflux"]
+    preds["MGMB"] = df["MGMB"]
+    preds["MBPB"] = df["MBPB"]
+    preds["MPPB"] = df["MPPB"]
 
     df = pd.DataFrame(preds)
     
@@ -43,7 +41,7 @@ if __name__ == "__main__":
         df[col] = df[col].clip(lower=train_bounds.loc["min", col], upper=train_bounds.loc["max", col])
 
     # undo log transforms
-    for col in ["HLM CLint","MLM CLint","Caco-2 Permeability Papp A>B","Caco-2 Permeability Efflux","MPPB","MBPB","MGMB"]:
+    for col in ["KSOL", "HLM CLint","MLM CLint","Caco-2 Permeability Papp A>B","Caco-2 Permeability Efflux","MPPB","MBPB","MGMB"]:
         df[col] = np.expm1(df[col])
     
     df.to_csv(

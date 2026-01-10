@@ -8,9 +8,9 @@ chemprop train \
 	--num-workers 1 \
 	--data-seed 42 \
 	--pytorch-seed 42 \
-	--data-path ../train_HLM_CLint_MLM_CLint_Caco-2_Permeability_Papp_AgtB_Caco-2_Permeability_Efflux.csv \
+	--data-path ../train_HLM_CLint_MLM_CLint_Caco-2_Permeability_Papp_AgtB_Caco-2_Permeability_Efflux_MPPB_MBPB_MGMB \
 	--smiles-columns SMILES \
-	--target-columns "HLM CLint" "MLM CLint" "Caco-2 Permeability Papp A>B" "Caco-2 Permeability Efflux" \
+	--target-columns "HLM CLint" "MLM CLint" "Caco-2 Permeability Papp A>B" "Caco-2 Permeability Efflux" "MPPB" "MBPB" "MGMB" \
 	--output-dir output_train \
 	--split-type random \
 	--split-sizes 0.80 0.20 0.00 \

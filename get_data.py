@@ -12,8 +12,8 @@ if __name__ == "__main__":
         _df.loc[_df[target] > upper_bound, target] = upper_bound
 
     # log transform certain targets and save out separate CSVs for each target group
-    for target in [["LogD"],["KSOL"],["HLM CLint","MLM CLint","Caco-2 Permeability Papp A>B","Caco-2 Permeability Efflux"],["MPPB","MBPB","MGMB"]]:
-        if len(target) > 1:  # log transform
+    for target in [["LogD"],["KSOL"],["HLM CLint","MLM CLint","Caco-2 Permeability Papp A>B","Caco-2 Permeability Efflux", "MPPB","MBPB","MGMB"]]:
+        if target[0] != "LogD":  # log transform
             _df[target] = np.log1p(_df[target])
         _df[["SMILES"] + target].dropna(subset=target, how="all").to_csv(f"train_{"_".join(target).replace(" ", "_").replace(">", "gt")}.csv", index=False)
 
