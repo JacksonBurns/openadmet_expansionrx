@@ -1,10 +1,6 @@
 python get_data.py
 
-cd binding
-. train.sh
-cd ..
-
-cd clearance_permeability
+cd binding_clearance_permeability
 . train.sh
 cd ..
 
