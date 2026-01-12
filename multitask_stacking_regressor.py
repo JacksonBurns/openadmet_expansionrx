@@ -60,37 +60,19 @@ class MultitaskStackingRegressor(BaseEstimator, RegressorMixin):
 
             for train_idx, val_idx in cv.split(X):
                 est_fold = clone(estimator)
-                if name == "prf":  # prf needs y to be all finite during fit- impute missing with mean
-                    y_train = y[train_idx]
-                    y_train_imputed = np.where(
-                        np.isfinite(y_train), y_train, np.nanmean(y_train, axis=0)
-                    )
-                    est_fold.fit(X[train_idx], y_train_imputed)
-                else:
-                    est_fold.fit(X[train_idx], y[train_idx])
+                est_fold.fit(X[train_idx], y[train_idx])
                 oof_preds[val_idx] = est_fold.predict(X[val_idx])
 
             Z[:, est_idx * n_tasks : (est_idx + 1) * n_tasks] = oof_preds
 
             # Fit base estimator on full data for inference
-            if name == "prf":
-                y_train = y
-                y_train_imputed = np.where(
-                    np.isfinite(y_train), y_train, np.nanmean(y_train, axis=0)
-                )
-                fitted_estimator = clone(estimator).fit(X, y_train_imputed)
-            else:
-                fitted_estimator = clone(estimator).fit(X, y)
+            fitted_estimator = clone(estimator).fit(X, y)
             
             self.base_estimators_.append((name, fitted_estimator))
 
         # Fit multitask meta learner
         self.final_estimator_ = clone(self.final_estimator)
-        y_train = y
-        y_train_imputed = np.where(
-            np.isfinite(y_train), y_train, np.nanmean(y_train, axis=0)
-        )
-        self.final_estimator_.fit(Z, y_train_imputed)
+        self.final_estimator_.fit(Z, y)
 
         return self
 

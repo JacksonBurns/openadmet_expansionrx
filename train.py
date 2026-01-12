@@ -4,11 +4,10 @@ from pathlib import Path
 
 import joblib
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
 
 from chemeleonregressor.model import get_chemeleon_pipe
 from minimolregressor.model import get_minimol_pipe
-from physicoforestregressor.model import get_prf_pipe
+from physicoforestregressor.model import get_prf_pipe, ColumnwiseRFRegressor
 from multitask_stacking_regressor import MultitaskStackingRegressor
 
 TASKS = [
@@ -44,7 +43,7 @@ if __name__ == "__main__":
 
     model = MultitaskStackingRegressor(
         estimators=estimators,
-        final_estimator=RandomForestRegressor(n_jobs=-1, random_state=42),
+        final_estimator=ColumnwiseRFRegressor(n_jobs=-1, random_state=42),
         n_folds=5,
         shuffle=True,
         random_state=42,

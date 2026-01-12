@@ -1,11 +1,54 @@
 from scikit_mol.conversions import SmilesToMolTransformer
 from scikit_mol.descriptors import MolecularDescriptorTransformer
 from scikit_mol.fingerprints import MorganFingerprintTransformer
-from sklearn.discriminant_analysis import StandardScaler
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import FeatureUnion, Pipeline
-from sklearn.compose import TransformedTargetRegressor
+
+from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.ensemble import RandomForestRegressor
+import numpy as np
+
+
+class ColumnwiseRFRegressor(BaseEstimator, RegressorMixin):
+    """
+    Fits a separate RandomForestRegressor to each column of a 2D target y.
+    Rows with NaN in a target column are dropped for that column.
+    """
+    def __init__(self, n_estimators=100, random_state=None, n_jobs=-1):
+        self.n_estimators = n_estimators
+        self.random_state = random_state
+        self.n_jobs = n_jobs
+        self.models_ = None
+
+    def fit(self, X, y):
+        y = np.asarray(y)
+        n_targets = y.shape[1]
+        self.models_ = []
+
+        for col in range(n_targets):
+            # Select rows where target is not nan
+            mask = ~np.isnan(y[:, col])
+            X_col = X[mask]
+            y_col = y[mask, col]
+
+            # Clone a new RandomForestRegressor for this column
+            model = RandomForestRegressor(
+                n_estimators=self.n_estimators,
+                random_state=self.random_state,
+                n_jobs=self.n_jobs
+            )
+            model.fit(X_col, y_col)
+            self.models_.append(model)
+
+        return self
+
+    def predict(self, X):
+        X = np.asarray(X)
+        # Predict each column separately and stack horizontally
+        preds = [model.predict(X) for model in self.models_]
+        return np.column_stack(preds)
+
 
 
 def get_prf_pipe(
@@ -41,7 +84,7 @@ def get_prf_pipe(
             ("imputer", SimpleImputer(strategy="median")),
             (
                 "rf",
-                RandomForestRegressor(
+                ColumnwiseRFRegressor(
                     n_estimators=n_estimators, random_state=random_seed, n_jobs=-1
                 ),
             ),
