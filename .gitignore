@@ -4,7 +4,10 @@
 !ksol/baybekov_ksol.csv
 
 # model outputs
-output_*
+output*
+
+# features
+*.parquet
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
