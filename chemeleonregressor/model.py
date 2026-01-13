@@ -15,6 +15,7 @@ from chemprop.data.collate import collate_batch
 from chemprop.data.datapoints import MoleculeDatapoint
 from chemprop.nn.transforms import UnscaleTransform
 from lightning.pytorch import Trainer
+from lightning import seed_everything
 from lightning.pytorch.callbacks import EarlyStopping, ModelCheckpoint
 from lightning.pytorch.loggers import TensorBoardLogger
 from rdkit import Chem
@@ -40,7 +41,7 @@ def add_train_defaults(args: Namespace) -> Namespace:
     return args
 
 
-class ChemeleonRegressor(RegressorMixin, BaseEstimator):
+class CheMeleonCrossValRegressor(RegressorMixin, BaseEstimator):
     def __init__(
         self,
         num_workers: int = 0,
@@ -53,6 +54,7 @@ class ChemeleonRegressor(RegressorMixin, BaseEstimator):
         epochs: int = 50,
         random_seed: int = 42,
         n_tasks: int = 1,
+        n_ensemble: int = 5,
     ):
         args = Namespace(
             num_workers=num_workers,
@@ -66,10 +68,15 @@ class ChemeleonRegressor(RegressorMixin, BaseEstimator):
             from_foundation="chemeleon",
             num_tasks=n_tasks,
         )
+
         self.output_dir = output_dir
         self.random_seed = random_seed
+        self.n_ensemble = n_ensemble
         self.args = add_train_defaults(args)
-        self.model = None
+
+        self.models_: list = []
+        self.best_ckpts_: list = []
+
         for name, value in locals().items():
             if name not in {"self", "args"}:
                 setattr(self, name, value)
@@ -86,63 +93,126 @@ class ChemeleonRegressor(RegressorMixin, BaseEstimator):
         return self.predict(X)
 
     def fit(self, X, y):
-        train_idx, val_idx = train_test_split(
-            np.arange(len(X)), train_size=0.8, random_state=self.random_seed
-        )
-        train_datapoints = self._build_dps(X[train_idx], y[train_idx])
-        val_datapoints = self._build_dps(X[val_idx], y[val_idx])
-        train_set = make_dataset(train_datapoints)
-        val_set = make_dataset(val_datapoints)
-        if self.model is None:
+        self.models_ = []
+        self.best_ckpts_ = []
+
+        for k in range(self.n_ensemble):
+            seed = self.random_seed + k
+            seed_everything(seed)
+
+            train_idx, val_idx = train_test_split(
+                np.arange(len(X)), train_size=0.8, random_state=seed
+            )
+
+            train_dps = self._build_dps(X[train_idx], y[train_idx])
+            val_dps = self._build_dps(X[val_idx], y[val_idx])
+
+            train_set = make_dataset(train_dps)
+            val_set = make_dataset(val_dps)
+
             output_scaler = train_set.normalize_targets()
             val_set.normalize_targets(output_scaler)
+
             output_transform = UnscaleTransform.from_standard_scaler(output_scaler)
-            self.model = build_model(self.args, train_set, output_transform, [None] * 4)
-        train_loader = DataLoader(
-            train_set,
-            batch_size=self.args.batch_size,
-            shuffle=True,
-            num_workers=self.args.num_workers,
-            collate_fn=collate_batch,
-        )
-        val_loader = DataLoader(
-            val_set,
-            batch_size=self.args.batch_size,
-            num_workers=self.args.num_workers,
-            collate_fn=collate_batch,
-        )
-        callbacks = [
-            EarlyStopping(monitor="val_loss", mode="min", patience=5),
-            ModelCheckpoint(dirpath=self.output_dir, monitor="val_loss", mode="min", save_top_k=1),
-        ]
-        trainer = Trainer(
-            accelerator=self.args.accelerator,
-            devices=self.args.devices,
-            max_epochs=self.args.epochs,
-            callbacks=callbacks,
-            logger=TensorBoardLogger(save_dir=self.output_dir, name="logs", default_hp_metric=False),
-        )
-        trainer.fit(self.model, train_dataloaders=train_loader, val_dataloaders=val_loader)
-        # reload best model
-        self.model = self.model.load_from_checkpoint(trainer.checkpoint_callback.best_model_path)
-        self.model.eval()
+
+            model = build_model(
+                self.args,
+                train_set,
+                output_transform,
+                [None] * 4,
+            )
+
+            run_dir = Path(self.output_dir) / f"seed_{seed}"
+            run_dir.mkdir(parents=True, exist_ok=True)
+
+            train_loader = DataLoader(
+                train_set,
+                batch_size=self.args.batch_size,
+                shuffle=True,
+                num_workers=self.args.num_workers,
+                collate_fn=collate_batch,
+            )
+
+            val_loader = DataLoader(
+                val_set,
+                batch_size=self.args.batch_size,
+                num_workers=self.args.num_workers,
+                collate_fn=collate_batch,
+            )
+
+            callbacks = [
+                EarlyStopping(monitor="val_loss", mode="min", patience=5),
+                ModelCheckpoint(
+                    dirpath=run_dir,
+                    monitor="val_loss",
+                    mode="min",
+                    save_top_k=1,
+                ),
+            ]
+
+            trainer = Trainer(
+                accelerator=self.args.accelerator,
+                devices=self.args.devices,
+                max_epochs=self.args.epochs,
+                callbacks=callbacks,
+                logger=TensorBoardLogger(
+                    save_dir=run_dir,
+                    name="logs",
+                    default_hp_metric=False,
+                ),
+                deterministic=True,
+            )
+
+            trainer.fit(
+                model,
+                train_dataloaders=train_loader,
+                val_dataloaders=val_loader,
+            )
+
+            best_ckpt = trainer.checkpoint_callback.best_model_path
+            model = model.load_from_checkpoint(best_ckpt)
+            model.eval()
+
+            self.models_.append(model)
+            self.best_ckpts_.append(best_ckpt)
+
         return self
 
     def predict(self, X):
+        if not self.models_:
+            raise RuntimeError("Estimator has not been fitted.")
+
         datapoints = self._build_dps(X, None)
         test_set = make_dataset(datapoints)
-        self._y = test_set.Y
+
         dl = DataLoader(
             test_set,
             batch_size=self.args.batch_size,
             num_workers=self.args.num_workers,
             collate_fn=collate_batch,
         )
-        eval_trainer = Trainer(
-            accelerator=self.args.accelerator, devices=1, enable_progress_bar=True, logger=False
-        )
-        preds = eval_trainer.predict(self.model, dataloaders=dl, return_predictions=True)
-        return torch.cat(preds, dim=0).numpy(force=True)
+
+        all_preds = []
+
+        for model in self.models_:
+            eval_trainer = Trainer(
+                accelerator=self.args.accelerator,
+                devices=1,
+                enable_progress_bar=False,
+                logger=False,
+                deterministic=True,
+            )
+            preds = eval_trainer.predict(
+                model,
+                dataloaders=dl,
+                return_predictions=True,
+            )
+            all_preds.append(torch.cat(preds, dim=0))
+
+        # (n_models, n_samples, n_tasks)
+        stacked = torch.stack(all_preds, dim=0)
+
+        return stacked.mean(dim=0).numpy(force=True)
 
     def _more_tags(self):
         return {"multioutput": True, "requires_y": True}
@@ -152,6 +222,6 @@ def get_chemeleon_pipe(outdir: str, random_seed: int = 42, n_tasks: int = 1):
     return Pipeline(
         [
             ("smiles2mol", SmilesToMolTransformer(n_jobs=-1)),
-            ("chemeleon", ChemeleonRegressor(random_seed=random_seed, n_tasks=n_tasks, output_dir=outdir)),
+            ("chemeleon", CheMeleonCrossValRegressor(random_seed=random_seed, n_tasks=n_tasks, output_dir=Path(outdir) / "chemeleon")),
         ]
     )
