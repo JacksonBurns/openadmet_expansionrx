@@ -44,7 +44,7 @@ if __name__ == "__main__":
     model = MultitaskStackingRegressor(
         estimators=estimators,
         final_estimator=ColumnwiseRFRegressor(n_jobs=-1, random_state=42),
-        n_folds=5,
+        n_folds=10,
         shuffle=True,
         random_state=42,
     )

@@ -68,7 +68,6 @@ class minimolTaskHead(LightningModule):
         self.log(f"{name}/loss", loss, prog_bar=True)
         return loss
 
-
     def training_step(self, batch, batch_idx):
         return self._step(batch, "train")
 
@@ -116,7 +115,7 @@ class MinimolCrossValLightningEstimator(BaseEstimator, RegressorMixin):
             seed_everything(seed)
 
             train_idx, val_idx = train_test_split(
-                np.arange(len(X)), train_size=0.8, random_state=seed
+                np.arange(len(X)), train_size=0.9, random_state=seed
             )
 
             train_ds = TensorDataset(X[train_idx], y[train_idx])

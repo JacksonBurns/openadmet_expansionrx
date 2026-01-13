@@ -101,7 +101,7 @@ class CheMeleonCrossValRegressor(RegressorMixin, BaseEstimator):
             seed_everything(seed)
 
             train_idx, val_idx = train_test_split(
-                np.arange(len(X)), train_size=0.8, random_state=seed
+                np.arange(len(X)), train_size=0.9, random_state=seed
             )
 
             train_dps = self._build_dps(X[train_idx], y[train_idx])
