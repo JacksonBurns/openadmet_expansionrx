@@ -32,9 +32,10 @@ class SmilesToEmbeddingTransformer(BaseEstimator, TransformerMixin):
 
 
 class minimolTaskHead(LightningModule):
-    def __init__(self, learning_rate: float = 0.0003, n_tasks: int = 1):
+    def __init__(self, learning_rate: float = 0.0003, n_tasks: int = 1, weights=None):
         super().__init__()
         self.learning_rate = learning_rate
+        self.register_buffer("weights", torch.tensor(weights))
         self.mlp = torch.nn.Sequential(
             torch.nn.Linear(512, 512),
             torch.nn.BatchNorm1d(512),
@@ -58,13 +59,16 @@ class minimolTaskHead(LightningModule):
     def _step(self, batch, name):
         x, y = batch
         y_hat = self(x)
-        
+
         mask = ~torch.isnan(y)
         if mask.sum() == 0:
-            loss = (y_hat * 0.0).sum()
+            loss = torch.tensor(0.0, device=self.device)
         else:
+            if self.weights is not None:
+                y *= self.weights
+                y_hat *= self.weights
             loss = torch.nn.functional.mse_loss(y_hat[mask], y[mask])
-        
+
         self.log(f"{name}/loss", loss, prog_bar=True)
         return loss
 
@@ -91,6 +95,7 @@ class MinimolCrossValLightningEstimator(BaseEstimator, RegressorMixin):
         output_dir="minimol_output",
         n_tasks=1,
         n_ensemble=5,
+        weights=None,
     ):
         self.batch_size = batch_size
         self.max_epochs = max_epochs
@@ -99,6 +104,7 @@ class MinimolCrossValLightningEstimator(BaseEstimator, RegressorMixin):
         self.output_dir = output_dir
         self.n_tasks = n_tasks
         self.n_ensemble = n_ensemble
+        self.weights = weights
 
         # fitted state
         self.models_ = []
@@ -122,40 +128,23 @@ class MinimolCrossValLightningEstimator(BaseEstimator, RegressorMixin):
             val_ds = TensorDataset(X[val_idx], y[val_idx])
 
             train_dl = DataLoader(
-                train_ds,
-                batch_size=self.batch_size,
-                shuffle=True,
-                drop_last=True,
+                train_ds, batch_size=self.batch_size, shuffle=True, drop_last=True
             )
             val_dl = DataLoader(val_ds, batch_size=self.batch_size)
 
-            model = minimolTaskHead(
-                learning_rate=self.learning_rate,
-                n_tasks=self.n_tasks,
-            )
+            model = minimolTaskHead(learning_rate=self.learning_rate, n_tasks=self.n_tasks, weights=self.weights)
 
             run_dir = Path(self.output_dir) / f"seed_{seed}"
             run_dir.mkdir(parents=True, exist_ok=True)
 
             callbacks = [
-                EarlyStopping(
-                    monitor="validation/loss",
-                    mode="min",
-                    patience=5,
-                ),
+                EarlyStopping(monitor="validation/loss", mode="min", patience=5),
                 ModelCheckpoint(
-                    dirpath=run_dir,
-                    monitor="validation/loss",
-                    mode="min",
-                    save_top_k=1,
+                    dirpath=run_dir, monitor="validation/loss", mode="min", save_top_k=1
                 ),
             ]
 
-            logger = TensorBoardLogger(
-                save_dir=run_dir,
-                name="minimol",
-                default_hp_metric=False,
-            )
+            logger = TensorBoardLogger(save_dir=run_dir, name="minimol", default_hp_metric=False)
 
             trainer = Trainer(
                 max_epochs=self.max_epochs,
@@ -201,10 +190,21 @@ class MinimolCrossValLightningEstimator(BaseEstimator, RegressorMixin):
         return {"multioutput": True, "requires_y": True}
 
 
-def get_minimol_pipe(embedding_parquet: str, output_dir: str, random_seed: int = 42, n_tasks: int = 1):
+def get_minimol_pipe(
+    embedding_parquet: str, output_dir: str, random_seed: int = 42, n_tasks: int = 1, weights=None
+):
     return Pipeline(
         [
             ("smiles2emb", SmilesToEmbeddingTransformer(embedding_parquet)),
-            ("minimol", MinimolCrossValLightningEstimator(output_dir=Path(output_dir) / "minimol", random_seed=random_seed, n_tasks=n_tasks, max_epochs=100)),
+            (
+                "minimol",
+                MinimolCrossValLightningEstimator(
+                    output_dir=Path(output_dir) / "minimol",
+                    random_seed=random_seed,
+                    n_tasks=n_tasks,
+                    max_epochs=100,
+                    weights=weights,
+                ),
+            ),
         ]
     )

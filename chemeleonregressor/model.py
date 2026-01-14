@@ -55,6 +55,7 @@ class CheMeleonCrossValRegressor(RegressorMixin, BaseEstimator):
         random_seed: int = 42,
         n_tasks: int = 1,
         n_ensemble: int = 5,
+        weights: Optional[Sequence[float]] = None,
     ):
         args = Namespace(
             num_workers=num_workers,
@@ -68,6 +69,8 @@ class CheMeleonCrossValRegressor(RegressorMixin, BaseEstimator):
             from_foundation="chemeleon",
             num_tasks=n_tasks,
         )
+        if weights is not None:
+            args.weights = weights
 
         self.output_dir = output_dir
         self.random_seed = random_seed
@@ -115,12 +118,7 @@ class CheMeleonCrossValRegressor(RegressorMixin, BaseEstimator):
 
             output_transform = UnscaleTransform.from_standard_scaler(output_scaler)
 
-            model = build_model(
-                self.args,
-                train_set,
-                output_transform,
-                [None] * 4,
-            )
+            model = build_model(self.args, train_set, output_transform, [None] * 4)
 
             run_dir = Path(self.output_dir) / f"seed_{seed}"
             run_dir.mkdir(parents=True, exist_ok=True)
@@ -142,12 +140,7 @@ class CheMeleonCrossValRegressor(RegressorMixin, BaseEstimator):
 
             callbacks = [
                 EarlyStopping(monitor="val_loss", mode="min", patience=5),
-                ModelCheckpoint(
-                    dirpath=run_dir,
-                    monitor="val_loss",
-                    mode="min",
-                    save_top_k=1,
-                ),
+                ModelCheckpoint(dirpath=run_dir, monitor="val_loss", mode="min", save_top_k=1),
             ]
 
             trainer = Trainer(
@@ -155,19 +148,11 @@ class CheMeleonCrossValRegressor(RegressorMixin, BaseEstimator):
                 devices=self.args.devices,
                 max_epochs=self.args.epochs,
                 callbacks=callbacks,
-                logger=TensorBoardLogger(
-                    save_dir=run_dir,
-                    name="logs",
-                    default_hp_metric=False,
-                ),
+                logger=TensorBoardLogger(save_dir=run_dir, name="logs", default_hp_metric=False),
                 deterministic=True,
             )
 
-            trainer.fit(
-                model,
-                train_dataloaders=train_loader,
-                val_dataloaders=val_loader,
-            )
+            trainer.fit(model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
             best_ckpt = trainer.checkpoint_callback.best_model_path
             model = model.load_from_checkpoint(best_ckpt)
@@ -202,11 +187,7 @@ class CheMeleonCrossValRegressor(RegressorMixin, BaseEstimator):
                 logger=False,
                 deterministic=True,
             )
-            preds = eval_trainer.predict(
-                model,
-                dataloaders=dl,
-                return_predictions=True,
-            )
+            preds = eval_trainer.predict(model, dataloaders=dl, return_predictions=True)
             all_preds.append(torch.cat(preds, dim=0))
 
         # (n_models, n_samples, n_tasks)
@@ -218,10 +199,15 @@ class CheMeleonCrossValRegressor(RegressorMixin, BaseEstimator):
         return {"multioutput": True, "requires_y": True}
 
 
-def get_chemeleon_pipe(outdir: str, random_seed: int = 42, n_tasks: int = 1):
+def get_chemeleon_pipe(outdir: str, random_seed: int = 42, n_tasks: int = 1, weights=None):
     return Pipeline(
         [
             ("smiles2mol", SmilesToMolTransformer(n_jobs=-1)),
-            ("chemeleon", CheMeleonCrossValRegressor(random_seed=random_seed, n_tasks=n_tasks, output_dir=Path(outdir) / "chemeleon")),
+            (
+                "chemeleon",
+                CheMeleonCrossValRegressor(
+                    random_seed=random_seed, n_tasks=n_tasks, output_dir=Path(outdir) / "chemeleon", weights=weights,
+                ),
+            ),
         ]
     )

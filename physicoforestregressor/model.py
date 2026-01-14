@@ -15,6 +15,7 @@ class ColumnwiseRFRegressor(BaseEstimator, RegressorMixin):
     Fits a separate RandomForestRegressor to each column of a 2D target y.
     Rows with NaN in a target column are dropped for that column.
     """
+
     def __init__(self, n_estimators=100, random_state=None, n_jobs=-1):
         self.n_estimators = n_estimators
         self.random_state = random_state
@@ -34,9 +35,7 @@ class ColumnwiseRFRegressor(BaseEstimator, RegressorMixin):
 
             # Clone a new RandomForestRegressor for this column
             model = RandomForestRegressor(
-                n_estimators=self.n_estimators,
-                random_state=self.random_state,
-                n_jobs=self.n_jobs
+                n_estimators=self.n_estimators, random_state=self.random_state, n_jobs=self.n_jobs
             )
             model.fit(X_col, y_col)
             self.models_.append(model)
@@ -48,7 +47,6 @@ class ColumnwiseRFRegressor(BaseEstimator, RegressorMixin):
         # Predict each column separately and stack horizontally
         preds = [model.predict(X) for model in self.models_]
         return np.column_stack(preds)
-
 
 
 def get_prf_pipe(

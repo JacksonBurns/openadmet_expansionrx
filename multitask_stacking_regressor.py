@@ -67,7 +67,7 @@ class MultitaskStackingRegressor(BaseEstimator, RegressorMixin):
 
             # Fit base estimator on full data for inference
             fitted_estimator = clone(estimator).fit(X, y)
-            
+
             self.base_estimators_.append((name, fitted_estimator))
 
         # Fit multitask meta learner

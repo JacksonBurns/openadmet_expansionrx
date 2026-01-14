@@ -22,6 +22,8 @@ TASKS = [
     "MGMB",
 ]
 
+WEIGHTS = [0.05, 0.02, 0.29, 0.15, 0.59, 0.59, 0.75, 0.82, 0.96]  # frequency of missing values
+
 if __name__ == "__main__":
     try:
         outdir = Path(sys.argv[1])
@@ -37,8 +39,11 @@ if __name__ == "__main__":
 
     estimators = [
         ("prf", get_prf_pipe()),
-        ("minimol", get_minimol_pipe("minimol_features.parquet", output_dir=outdir, n_tasks=len(TASKS))),
-        ("chemeleon", get_chemeleon_pipe(outdir=outdir, n_tasks=len(TASKS))),
+        (
+            "minimol",
+            get_minimol_pipe("minimol_features.parquet", output_dir=outdir, n_tasks=len(TASKS), weights=WEIGHTS),
+        ),
+        ("chemeleon", get_chemeleon_pipe(outdir=outdir, n_tasks=len(TASKS), weights=WEIGHTS)),
     ]
 
     model = MultitaskStackingRegressor(
@@ -48,9 +53,6 @@ if __name__ == "__main__":
         shuffle=True,
         random_state=42,
     )
-    model.fit(
-        df["clean_smiles"],
-        df[TASKS].to_numpy(),
-    )
+    model.fit(df["clean_smiles"], df[TASKS].to_numpy())
     outmodel = outdir / "model.joblib"
     joblib.dump(model, outmodel)
