@@ -1,0 +1,30 @@
+# train multiple replicates using the best hyperparameters found during hyperparameter optimization
+chemprop train \
+	--epochs 50 \
+	--patience 5 \
+	--num-workers 1 \
+	--data-seed 42 \
+	--pytorch-seed 42 \
+	--data-path ../train.csv \
+    --task-type regression \
+	--smiles-columns SMILES \
+	--target-columns LogD KSOL \
+	--output-dir output_train \
+	--split-type random \
+	--split-sizes 0.80 0.20 0.00 \
+    --num-replicates 5 \
+	--loss mse \
+	--metrics mse mae rmse r2 \
+    --message-hidden-dim 1300 \
+    --warmup-epochs 9 \
+    --final-lr 0.000014 \
+    --batch-size 32 \
+    --aggregation-norm 151 \
+    --max-lr 0.00041 \
+    --activation LEAKYRELU \
+    --depth 6 \
+    --dropout 0.2 \
+    --aggregation norm \
+    --ffn-num-layers 1 \
+    --ffn-hidden-dim 1500 \
+    --init-lr 0.000027

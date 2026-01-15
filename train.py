@@ -7,12 +7,10 @@ import pandas as pd
 
 from chemeleonregressor.model import get_chemeleon_pipe
 from minimolregressor.model import get_minimol_pipe
-from physicoforestregressor.model import get_prf_pipe, ColumnwiseRFRegressor
-from multitask_stacking_regressor import MultitaskStackingRegressor
+from physicoforestregressor.model import get_prf_pipe
+from multitask_stacking_regressor import MultitaskStackingRegressor, CentralScrutinizer
 
 TASKS = [
-    "LogD",
-    "KSOL",
     "HLM CLint",
     "MLM CLint",
     "Caco-2 Permeability Papp A>B",
@@ -22,7 +20,7 @@ TASKS = [
     "MGMB",
 ]
 
-WEIGHTS = [0.05, 0.02, 0.29, 0.15, 0.59, 0.59, 0.75, 0.82, 0.96]  # frequency of missing values
+WEIGHTS = [0.29, 0.15, 0.59, 0.59, 0.75, 0.82, 0.96]  # frequency of missing values
 
 if __name__ == "__main__":
     try:
@@ -37,6 +35,9 @@ if __name__ == "__main__":
 
     df = pd.read_csv("train.csv")
 
+    # drop rows where _none_ of the molecules have the tasks measured
+    df = df.dropna(subset=TASKS, how="all").reset_index(drop=True)
+
     estimators = [
         ("prf", get_prf_pipe()),
         (
@@ -48,7 +49,7 @@ if __name__ == "__main__":
 
     model = MultitaskStackingRegressor(
         estimators=estimators,
-        final_estimator=ColumnwiseRFRegressor(n_jobs=-1, random_state=42),
+        final_estimator=CentralScrutinizer(random_state=42, output_dir=outdir, max_epochs=1024),
         n_folds=10,
         shuffle=True,
         random_state=42,
