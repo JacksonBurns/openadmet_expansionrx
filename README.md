@@ -81,11 +81,14 @@ The preprocessing (namely re-scaling and clipping) done in the setup stage will 
 
 The below are just some notes about the earlier versions of the model, preserved for posterity.
 
+Final submitted model was v6.
+
 v2: initial attempt - no replicates for the submodels
 v3: 5-fold cross val for the submodels, which imprved some targets but cost on others
 v4: 10 fold cross val in stacking model and add an additional 10% for training the 5 replicates of minimol and CheMeleon; seemed to be more of a 'best of both worlds'
 v5: weighting by task, which had little to no effect
 v6: ksol and logd separate model, NN for meta-model
+v7: add rdkit descs for ksol and logd (this was worse)
 
 Overall Stats - MA-RAE:
 
@@ -94,15 +97,16 @@ Overall Stats - MA-RAE:
  - v4: 0.59 +/- 0.02
  - v5: 0.59 +/- 0.02
  - v6: 0.57 +/- 0.02
+ - v7: 0.58 +/- 0.02
 
 MAE for targets (best on leaderboard right now):
 
- - LogD (0.26):         0.42 -> 0.42 -> 0.40 -> 0.41 -> 0.33
- - KSOL (0.30):         0.39 -> 0.37 -> 0.37 -> 0.37 -> 0.34
- - MLM CLint (0.31):    0.36 -> 0.37 -> 0.37 -> 0.37 -> 0.37
- - HLM CLint (0.27):    0.30 -> 0.30 -> 0.30 -> 0.30 -> 0.30
- - Caco2 Efflux (0.27): 0.30 -> 0.33 -> 0.31 -> 0.31 -> 0.32
- - Caco2 A>B (0.19):    0.23 -> 0.26 -> 0.24 -> 0.24 -> 0.23
- - MPPB (0.14):         0.18 -> 0.16 -> 0.17 -> 0.18 -> 0.16
- - MBPB (0.11):         0.15 -> 0.13 -> 0.13 -> 0.13 -> 0.14
- - MGMB (0.14):         0.17 -> 0.17 -> 0.16 -> 0.15 -> 0.17
+ - LogD (0.26):         0.42 -> 0.42 -> 0.40 -> 0.41 -> 0.33 -> 0.34
+ - KSOL (0.30):         0.39 -> 0.37 -> 0.37 -> 0.37 -> 0.34 -> 0.38
+ - MLM CLint (0.31):    0.36 -> 0.37 -> 0.37 -> 0.37 -> 0.37 -> 0.37
+ - HLM CLint (0.27):    0.30 -> 0.30 -> 0.30 -> 0.30 -> 0.30 -> 0.30
+ - Caco2 Efflux (0.27): 0.30 -> 0.33 -> 0.31 -> 0.31 -> 0.32 -> 0.32
+ - Caco2 A>B (0.19):    0.23 -> 0.26 -> 0.24 -> 0.24 -> 0.23 -> 0.23
+ - MPPB (0.14):         0.18 -> 0.16 -> 0.17 -> 0.18 -> 0.16 -> 0.16
+ - MBPB (0.11):         0.15 -> 0.13 -> 0.13 -> 0.13 -> 0.14 -> 0.14
+ - MGMB (0.14):         0.17 -> 0.17 -> 0.16 -> 0.15 -> 0.17 -> 0.17
