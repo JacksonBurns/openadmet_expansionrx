@@ -8,7 +8,7 @@ chemprop hpopt \
     --task-type regression \
 	--smiles-columns SMILES \
 	--target-columns LogD KSOL \
-	--output-dir output_hpopt \
+	--output-dir /media/jackson/nicedisk/openadmet \
 	--split-type random \
 	--split-sizes 0.80 0.20 0.00 \
     --num-replicates 1 \
@@ -16,8 +16,9 @@ chemprop hpopt \
 	--metrics mse mae rmse r2 \
     --remove-checkpoints \
     --show-individual-scores \
+	--molecule-featurizers rdkit_2d \
     --search-parameter-keywords all \
-    --hpopt-save-dir output_hpopt \
+    --hpopt-save-dir /media/jackson/nicedisk/openadmet \
     --raytune-num-samples 64 \
     --raytune-use-gpu \
     --raytune-num-gpus 1 \

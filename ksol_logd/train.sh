@@ -11,20 +11,20 @@ chemprop train \
 	--target-columns LogD KSOL \
 	--output-dir output_train \
 	--split-type random \
-	--split-sizes 0.80 0.20 0.00 \
+	--split-sizes 0.90 0.10 0.00 \
     --num-replicates 5 \
 	--loss mse \
 	--metrics mse mae rmse r2 \
-    --message-hidden-dim 1300 \
-    --warmup-epochs 9 \
-    --final-lr 0.000014 \
-    --batch-size 32 \
-    --aggregation-norm 151 \
-    --max-lr 0.00041 \
+	--molecule-featurizers rdkit_2d \
+    --message-hidden-dim 1200 \
+    --warmup-epochs 12 \
+    --final-lr 0.0000277 \
+    --batch-size 64 \
+    --aggregation sum \
+    --max-lr 0.0002 \
     --activation LEAKYRELU \
-    --depth 6 \
-    --dropout 0.2 \
-    --aggregation norm \
+    --depth 4 \
+    --dropout 0.0 \
     --ffn-num-layers 1 \
-    --ffn-hidden-dim 1500 \
-    --init-lr 0.000027
+    --ffn-hidden-dim 400 \
+    --init-lr 0.0000511
