@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from astartes import train_test_split
 from chemprop.cli.common import add_common_args
-from chemprop.cli.train import add_train_args, build_model
+from chemprop.cli.train import add_train_args, build_model, normalize_inputs
 from chemprop.cli.utils.parsing import make_dataset
 from chemprop.data.collate import collate_batch
 from chemprop.data.datapoints import MoleculeDatapoint
@@ -119,7 +119,9 @@ class ChempropCrossValRegressor(RegressorMixin, BaseEstimator):
 
             output_transform = UnscaleTransform.from_standard_scaler(output_scaler)
 
-            model = build_model(self.args, train_set, output_transform, [None] * 4)
+            input_transforms = normalize_inputs(train_set, val_set, self.args)
+
+            model = build_model(self.args, train_set, output_transform, input_transforms)
 
             run_dir = Path(self.output_dir) / f"seed_{seed}"
             run_dir.mkdir(parents=True, exist_ok=True)
@@ -214,6 +216,7 @@ def get_chemprop_pipe(
                         n_tasks=n_tasks,
                         output_dir=Path(outdir) / "chemeleon",
                         weights=weights,
+                        config=None,  # uses chemeleon defaults
                     ),
                 ),
             ]
@@ -229,7 +232,7 @@ def get_chemprop_pipe(
                         n_tasks=n_tasks,
                         output_dir=Path(outdir) / "chemprop",
                         weights=weights,
-                        **config,
+                        config=config,
                     ),
                 ),
             ]

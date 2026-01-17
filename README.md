@@ -8,21 +8,16 @@ Installation and usage instructions are also included, for those seeking to repr
 
 ### LogD and KSOL
 
-For these two tasks, there is enough data that we afford to train a Chemprop model from scratch and expect good performance.
-This is done in `ksol_logd`, where we optimize a single multitask model to predict both at the same time, and then train 5 replicates of it for later prediction.
-Very standard stuff there.
-
-### Binding, Permeability, and Clearance
-
-For the remaining tasks, the available data is much more limited and different techniques are needed.
-
 Multitask learning, where a deep learning model simultaneously predicts multiple outputs at the same time, has been shown to be highly effective.
 At the same time, classical approaches are often strong even by comparison, often for reasons that are hard to detect.
 
-To take advantage of both, we will train a Multitask Stacking Model, where `minimol` ([architecture here](./minimolregressor/model.py)), `CheMeleon` ([architecture here](./chemeleonregressor/model.py)), and a physicochemical (Morgan Count @ 2048 with RDKit descriptors) random forest all make predictions for a given input, and then a final meta-model combines them to produce the final result.
+To take advantage of both, we will train a Multitask Stacking Model, where `minimol` ([architecture here](./minimolregressor/model.py)), `CheMeleon`/`Chemprop` ([architecture here](./chemeleonregressor/model.py)), and a physicochemical (Morgan Count @ 2048 with RDKit descriptors) random forest all make predictions for a given input, and then a final meta-model combines them to produce the final result.
 
-`minimol` and `CheMeleon` are easy to do this with, but scikit-learn's `StackingRegressor` does not allow it for random forest (because models like RandomForest do not improve with multitask, as it just fits _num_tasks_ sub-models).
+`minimol` and `CheMeleon`/`Chemprop` are easy to do this with, but scikit-learn's `StackingRegressor` does not allow it for random forest (because models like RandomForest do not improve with multitask, as it just fits _num_tasks_ sub-models).
 Therefore, we will re-implement this ourselves (with help from AI) in `multitask_stacking_regressor.py` (which also houses the final meta-model).
+
+Both `CheMeleon` and `Chemprop` are used because early experiments showed that LogD and KSOL were better fit plain `Chemprop` than `CheMeleon`, whereas the other targets were the other way around.
+Including both with a sufficiently flexible meta-model _should_ allow to get the 'best of both worlds'.
 
 ## Installation
 
