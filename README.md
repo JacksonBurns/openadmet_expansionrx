@@ -89,6 +89,7 @@ v4: 10 fold cross val in stacking model and add an additional 10% for training t
 v5: weighting by task, which had little to no effect
 v6: ksol and logd separate model, NN for meta-model
 v7: add rdkit descs for ksol and logd (this was worse)
+v8: re-incoporate plain chemprop model into stack to make everything fully multitask again, remove weights and rdkit descs
 
 Overall Stats - MA-RAE:
 
