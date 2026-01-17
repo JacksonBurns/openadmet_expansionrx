@@ -35,7 +35,7 @@ class minimolTaskHead(LightningModule):
     def __init__(self, learning_rate: float = 0.0003, n_tasks: int = 1, weights=None):
         super().__init__()
         self.learning_rate = learning_rate
-        self.register_buffer("weights", torch.tensor(weights))
+        self.register_buffer("weights", torch.tensor(weights) if weights is not None else None)
         self.mlp = torch.nn.Sequential(
             torch.nn.Linear(512, 512),
             torch.nn.BatchNorm1d(512),
