@@ -24,9 +24,7 @@ class _CentralScrutinizerModule(pl.LightningModule):
         self.save_hyperparameters()
 
         self.net = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.ReLU(),
-            nn.Linear(hidden_dim, n_tasks),
+            nn.Linear(input_dim, hidden_dim), nn.ReLU(), nn.Linear(hidden_dim, n_tasks)
         )
 
     def forward(self, x):
@@ -40,14 +38,14 @@ class _CentralScrutinizerModule(pl.LightningModule):
         sq_error = sq_error * mask.float()
         column_sum_error = sq_error.sum(dim=0)
         column_valid_counts = mask.sum(dim=0).float()
-        safe_counts = torch.where(column_valid_counts > 0, 
-                                column_valid_counts, 
-                                torch.ones_like(column_valid_counts))
+        safe_counts = torch.where(
+            column_valid_counts > 0, column_valid_counts, torch.ones_like(column_valid_counts)
+        )
         column_mse = column_sum_error / safe_counts
         total_valid_columns = (column_valid_counts > 0).float().sum()
         if total_valid_columns == 0:
             return torch.tensor(0.0, device=y.device, requires_grad=True)
-            
+
         return column_mse.sum() / total_valid_columns
 
     def training_step(self, batch, batch_idx):
@@ -59,9 +57,7 @@ class _CentralScrutinizerModule(pl.LightningModule):
 
     def configure_optimizers(self):
         return torch.optim.AdamW(
-            self.parameters(),
-            lr=self.hparams.lr,
-            weight_decay=self.hparams.weight_decay,
+            self.parameters(), lr=self.hparams.lr, weight_decay=self.hparams.weight_decay
         )
 
 
@@ -109,21 +105,12 @@ class CentralScrutinizer(BaseEstimator, RegressorMixin):
         if self.random_state is not None:
             seed_everything(self.random_state)
 
-        dataset = TensorDataset(
-            torch.from_numpy(X),
-            torch.from_numpy(y),
-        )
+        dataset = TensorDataset(torch.from_numpy(X), torch.from_numpy(y))
 
-        loader = DataLoader(
-            dataset,
-            batch_size=self.batch_size,
-            shuffle=True,
-        )
+        loader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
         logger = TensorBoardLogger(
-            save_dir=self.output_dir,
-            name="metamodel",
-            default_hp_metric=False,
+            save_dir=self.output_dir, name="metamodel", default_hp_metric=False
         )
 
         self.model_ = _CentralScrutinizerModule(
@@ -157,7 +144,6 @@ class CentralScrutinizer(BaseEstimator, RegressorMixin):
             preds = self.model_(X_t).numpy(force=True)
 
         return preds
-
 
 
 class MultitaskStackingRegressor(BaseEstimator, RegressorMixin):

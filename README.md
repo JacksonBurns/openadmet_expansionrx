@@ -110,3 +110,34 @@ MAE for targets (best on leaderboard right now):
  - MPPB (0.14):         0.18 -> 0.16 -> 0.17 -> 0.18 -> 0.16 -> 0.16
  - MBPB (0.11):         0.15 -> 0.13 -> 0.13 -> 0.13 -> 0.14 -> 0.14
  - MGMB (0.14):         0.17 -> 0.17 -> 0.16 -> 0.15 -> 0.17 -> 0.17
+
+for the v8 model i re-incporated logd and ksol into the main model by adding a plain chemprop regressor alongside the chemeleon one.
+Use this command to get a rough idea of the hparams for the regular Chemprop model (ended up terminating it early):
+
+```bash
+chemprop hpopt \
+	--epochs 50 \
+	--patience 5 \
+	--num-workers 1 \
+	--data-seed 42 \
+	--pytorch-seed 42 \
+	--data-path ../train.csv \
+    --task-type regression \
+	--smiles-columns SMILES \
+	--target-columns "LogD" "KSOL" "HLM CLint" "MLM CLint" "Caco-2 Permeability Papp A>B" "Caco-2 Permeability Efflux" "MPPB" "MBPB" "MGMB" \
+	--output-dir /media/jackson/nicedisk/openadmet_final \
+	--split-type random \
+	--split-sizes 0.80 0.20 0.00 \
+    --num-replicates 1 \
+	--loss mse \
+	--metrics mse mae rmse r2 \
+    --remove-checkpoints \
+    --show-individual-scores \
+    --search-parameter-keywords all \
+    --hpopt-save-dir /media/jackson/nicedisk/openadmet_final \
+    --raytune-num-samples 64 \
+    --raytune-use-gpu \
+    --raytune-num-gpus 1 \
+    --raytune-max-concurrent-trials 1 \
+    --raytune-search-algorithm optuna
+```
