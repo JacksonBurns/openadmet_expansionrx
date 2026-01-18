@@ -67,7 +67,7 @@ if __name__ == "__main__":
     model = MultitaskStackingRegressor(
         estimators=estimators,
         final_estimator=CentralScrutinizer(random_state=42, output_dir=outdir, max_epochs=1024),
-        n_folds=10,
+        n_folds=5,
         shuffle=True,
         random_state=42,
     )
