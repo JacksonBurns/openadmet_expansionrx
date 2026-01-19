@@ -52,7 +52,7 @@ class ChempropCrossValRegressor(RegressorMixin, BaseEstimator):
         epochs: int = 50,
         random_seed: int = 42,
         n_tasks: int = 1,
-        n_ensemble: int = 5,
+        n_ensemble: int = 3,
         weights: Optional[Sequence[float]] = None,
         config: Optional[dict] = None,
     ):
@@ -69,6 +69,8 @@ class ChempropCrossValRegressor(RegressorMixin, BaseEstimator):
             args.weights = weights
         if config is None:
             args.from_foundation = "chemeleon"
+            args.ffn_hidden_dim = 2048
+            args.ffn_num_layers = 1
         else:
             for k, v in config.items():
                 setattr(args, k, v)

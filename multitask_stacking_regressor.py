@@ -89,7 +89,6 @@ class CentralScrutinizer(BaseEstimator, RegressorMixin):
         self.output_dir = output_dir if output_dir is not None else "central_scrutinizer"
 
     def fit(self, X, y):
-        print(X, X.shape, y, y.shape)
         X = np.asarray(X, dtype=np.float32)
         y = np.asarray(y, dtype=np.float32)
 

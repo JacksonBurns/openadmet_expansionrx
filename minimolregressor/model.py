@@ -94,7 +94,7 @@ class MinimolCrossValLightningEstimator(BaseEstimator, RegressorMixin):
         random_seed=42,
         output_dir="minimol_output",
         n_tasks=1,
-        n_ensemble=5,
+        n_ensemble=3,
         weights=None,
     ):
         self.batch_size = batch_size
