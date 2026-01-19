@@ -1,7 +1,7 @@
 import os
 from argparse import ArgumentParser, Namespace
 from datetime import datetime
-from os import PathLike, name
+from os import PathLike
 from pathlib import Path
 from typing import Optional, Sequence
 
@@ -9,7 +9,7 @@ import numpy as np
 import torch
 from astartes import train_test_split
 from chemprop.cli.common import add_common_args
-from chemprop.cli.train import add_train_args, build_model, normalize_inputs
+from chemprop.cli.train import add_train_args, build_model
 from chemprop.cli.utils.parsing import make_dataset
 from chemprop.data.collate import collate_batch
 from chemprop.data.datapoints import MoleculeDatapoint
@@ -41,39 +41,36 @@ def add_train_defaults(args: Namespace) -> Namespace:
     return args
 
 
-class ChempropCrossValRegressor(RegressorMixin, BaseEstimator):
+class CheMeleonCrossValRegressor(RegressorMixin, BaseEstimator):
     def __init__(
         self,
         num_workers: int = 0,
         batch_size: int = 64,
         output_dir: Optional[PathLike] = CHEMPROP_TRAIN_DIR / "sklearn_output" / NOW,
+        ffn_hidden_dim: int = 2_048,
+        ffn_num_layers: int = 1,
         accelerator: str = "auto",
         devices: str | int | Sequence[int] = "auto",
         epochs: int = 50,
         random_seed: int = 42,
         n_tasks: int = 1,
-        n_ensemble: int = 3,
+        n_ensemble: int = 5,
         weights: Optional[Sequence[float]] = None,
-        config: Optional[dict] = None,
     ):
         args = Namespace(
             num_workers=num_workers,
             batch_size=batch_size,
             output_dir=output_dir,
+            ffn_hidden_dim=ffn_hidden_dim,
+            ffn_num_layers=ffn_num_layers,
             accelerator=accelerator,
             devices=devices,
             epochs=epochs,
+            from_foundation="chemeleon",
             num_tasks=n_tasks,
         )
         if weights is not None:
             args.weights = weights
-        if config is None:
-            args.from_foundation = "chemeleon"
-            args.ffn_hidden_dim = 2048
-            args.ffn_num_layers = 1
-        else:
-            for k, v in config.items():
-                setattr(args, k, v)
 
         self.output_dir = output_dir
         self.random_seed = random_seed
@@ -121,9 +118,7 @@ class ChempropCrossValRegressor(RegressorMixin, BaseEstimator):
 
             output_transform = UnscaleTransform.from_standard_scaler(output_scaler)
 
-            input_transforms = normalize_inputs(train_set, val_set, self.args)
-
-            model = build_model(self.args, train_set, output_transform, input_transforms)
+            model = build_model(self.args, train_set, output_transform, [None] * 4)
 
             run_dir = Path(self.output_dir) / f"seed_{seed}"
             run_dir.mkdir(parents=True, exist_ok=True)
@@ -204,38 +199,15 @@ class ChempropCrossValRegressor(RegressorMixin, BaseEstimator):
         return {"multioutput": True, "requires_y": True}
 
 
-def get_chemprop_pipe(
-    config: str | dict, outdir: str, random_seed: int = 42, n_tasks: int = 1, weights=None
-):
-    if config == "chemeleon":
-        return Pipeline(
-            [
-                ("smiles2mol", SmilesToMolTransformer(n_jobs=-1)),
-                (
-                    "chemeleon",
-                    ChempropCrossValRegressor(
-                        random_seed=random_seed,
-                        n_tasks=n_tasks,
-                        output_dir=Path(outdir) / "chemeleon",
-                        weights=weights,
-                        config=None,  # uses chemeleon defaults
-                    ),
+def get_chemeleon_pipe(outdir: str, random_seed: int = 42, n_tasks: int = 1, weights=None):
+    return Pipeline(
+        [
+            ("smiles2mol", SmilesToMolTransformer(n_jobs=-1)),
+            (
+                "chemeleon",
+                CheMeleonCrossValRegressor(
+                    random_seed=random_seed, n_tasks=n_tasks, output_dir=Path(outdir) / "chemeleon", weights=weights,
                 ),
-            ]
-        )
-    else:
-        return Pipeline(
-            [
-                ("smiles2mol", SmilesToMolTransformer(n_jobs=-1)),
-                (
-                    "chemprop",
-                    ChempropCrossValRegressor(
-                        random_seed=random_seed,
-                        n_tasks=n_tasks,
-                        output_dir=Path(outdir) / "chemprop",
-                        weights=weights,
-                        config=config,
-                    ),
-                ),
-            ]
-        )
+            ),
+        ]
+    )

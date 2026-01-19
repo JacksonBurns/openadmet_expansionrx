@@ -1,0 +1,25 @@
+chemprop hpopt \
+	--epochs 50 \
+	--patience 5 \
+	--num-workers 1 \
+	--data-seed 42 \
+	--pytorch-seed 42 \
+	--data-path ../train.csv \
+    --task-type regression \
+	--smiles-columns SMILES \
+	--target-columns LogD KSOL \
+	--output-dir output_hpopt \
+	--split-type random \
+	--split-sizes 0.80 0.20 0.00 \
+    --num-replicates 1 \
+	--loss mse \
+	--metrics mse mae rmse r2 \
+    --remove-checkpoints \
+    --show-individual-scores \
+    --search-parameter-keywords all \
+    --hpopt-save-dir output_hpopt \
+    --raytune-num-samples 64 \
+    --raytune-use-gpu \
+    --raytune-num-gpus 1 \
+    --raytune-max-concurrent-trials 1 \
+    --raytune-search-algorithm optuna

@@ -7,25 +7,17 @@ import pandas as pd
 
 if __name__ == "__main__":
     try:
-        model_0_path = sys.argv[1]
-        model_1_path = sys.argv[2]
+        model_path = sys.argv[1]
+        ksol_logd_predictions_path = sys.argv[2]
     except:
-        print("Usage: python predict.py <path_to_model_0> <path_to_model_1>")
+        print("Usage: python predict.py <path_to_model> <path_to_ksol_logd_predictions>")
         exit(1)
-    model_0 = joblib.load(model_0_path)
-    model_1 = joblib.load(model_1_path)
+    ksol_logd_df = pd.read_csv(ksol_logd_predictions_path)
+    model = joblib.load(model_path)
     test_df = pd.read_csv("test.csv")
-    predictions_0 = model_0.predict(test_df["clean_smiles"])
-    df_0 = pd.DataFrame(
-        data=predictions_0,
-        columns=[
-            "LogD",
-            "KSOL",
-        ],
-    )
-    predictions_1 = model_1.predict(test_df["clean_smiles"])
-    df_1 = pd.DataFrame(
-        data=predictions_1,
+    predictions = model.predict(test_df["clean_smiles"])
+    df = pd.DataFrame(
+        data=predictions,
         columns=[
             "HLM CLint",
             "MLM CLint",
@@ -36,7 +28,8 @@ if __name__ == "__main__":
             "MGMB",
         ],
     )
-    df = pd.concat([df_0, df_1], axis=1)
+    df["LogD"] = ksol_logd_df["LogD"]
+    df["KSOL"] = ksol_logd_df["KSOL"]
     # clip predictions to the bounds observed during training (clipped, by me)
     train = pd.read_csv("train.csv")
     train_bounds = train[

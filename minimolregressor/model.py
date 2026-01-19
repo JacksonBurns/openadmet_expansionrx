@@ -94,7 +94,7 @@ class MinimolCrossValLightningEstimator(BaseEstimator, RegressorMixin):
         random_seed=42,
         output_dir="minimol_output",
         n_tasks=1,
-        n_ensemble=3,
+        n_ensemble=5,
         weights=None,
     ):
         self.batch_size = batch_size
@@ -132,9 +132,7 @@ class MinimolCrossValLightningEstimator(BaseEstimator, RegressorMixin):
             )
             val_dl = DataLoader(val_ds, batch_size=self.batch_size)
 
-            model = minimolTaskHead(
-                learning_rate=self.learning_rate, n_tasks=self.n_tasks, weights=self.weights
-            )
+            model = minimolTaskHead(learning_rate=self.learning_rate, n_tasks=self.n_tasks, weights=self.weights)
 
             run_dir = Path(self.output_dir) / f"seed_{seed}"
             run_dir.mkdir(parents=True, exist_ok=True)
