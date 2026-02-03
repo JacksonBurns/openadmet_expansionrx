@@ -47,6 +47,7 @@ numpy
 scikit_learn
 scikit_mol
 chemprop[hpopt]>=2.2.1,<2.3
+huggingface_hub  # needed for downloading the datafiles from huggingface
 ```
 
 Chemprop 2.2.1 currently has bugs with `lightning>=2.6.0` and `ray[tune]>2.45`, so you might need to limit the versions of those installed packages _or_ install this exact version of Chemprop:
